@@ -166,7 +166,7 @@ export default class Files extends View {
   show(path, cx) {
     // A reload of the same file keeps what it showed until the new content is read.
     const same = path === this.file;
-    this.code?.release(); this.code = null; if (!same) { this.text = null; this.imagePath = null; }
+    this.code?.release(); this.code = null; if (!same) { this.text = null; this.imagePath = null; this.markdownSource = false; }
     this.file = path; this.fileError = null;
     this.isMarkdown = Boolean(path && MARKDOWN.test(path));
     this.isImage = Boolean(path && IMAGE.test(path));
@@ -180,15 +180,31 @@ export default class Files extends View {
         if (text === null) { this.fileError = "This file is no longer available"; return; }
         if (text.includes("\0")) { this.fileError = "Binary file · no text preview"; return; }
         const value = text.length > 400000 ? text.slice(0, 400000) + "\n… (file truncated)" : text;
-        if (this.isMarkdown) { this.text = value; return; }
-        const t = theme(), ext = path.includes(".") ? path.split(".").pop() : "txt";
-        this.code = EditorState.new({ language: LANG[ext] ?? ext, readonly: true,
-          value,
-          font_family: settings().font_family, font_size: 12,
-          syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
+        if (this.isMarkdown) {
+          this.text = value;
+          if (this.markdownSource) this.code = this.editor(value, "md");
+          return;
+        }
+        const ext = path.includes(".") ? path.split(".").pop() : "txt";
+        this.code = this.editor(value, LANG[ext] ?? ext);
       } catch { if (this.file === path && this.current(context)) this.fileError = "Cannot preview this file (binary, too large, or unreadable)"; }
       finally { cx.notify(); }
     });
+  }
+
+  editor(value, language) {
+    const t = theme();
+    return EditorState.new({ language, readonly: true, value,
+      font_family: settings().font_family, font_size: 12,
+      syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
+  }
+
+  toggleSource(cx) {
+    if (!this.isMarkdown || this.text === null) return;
+    this.markdownSource = !this.markdownSource;
+    this.code?.release(); this.code = null;
+    if (this.markdownSource) this.code = this.editor(this.text, "md");
+    cx.notify();
   }
 
   // image() reads only the app home: copy the file there, replacing this image's last copy.
@@ -264,6 +280,11 @@ export default class Files extends View {
       .child(h_flex().h(42).flex_none().px(14).gap(8).items_center().border_b(1).border_color(t.border)
         .when(Boolean(this.file), el => el.child(div().id("files-back").w(20).cursor_pointer().text_color(t.muted).on_click((_e, cx) => { this.show(null); cx.notify(); }).child("←")))
         .child(div().font_semibold().child("Files"))
+        .when(this.isMarkdown && this.text !== null, el => el.child(
+          div().id("files-source").flex_none().cursor_pointer().px(6).py(2).rounded(5).border_1().border_color(t.border).text_size(11).text_color(t.muted)
+            .hover(s => s.bg(t.hover))
+            .on_click((_e, cx) => this.toggleSource(cx))
+            .child(this.markdownSource ? "Preview" : "Source")))
         .child(div().flex_1().min_w(0).truncate().text_right().text_size(12).text_color(t.dim).child(this.file ?? this.root?.split(/[\\/]/).pop() ?? "")))
       .when(!this.file, el => el.child(v_flex().id("files-tree").flex_1().min_h(0).overflow_y_scrollbar().p(6).children(this.rows("", 0, [], t))
         .when(Boolean(this.error) || !this.entries.get("")?.length, el => el.child(div().p(8).text_size(12).text_color(t.dim).child(this.error || (this.loading ? "Loading files…" : this.root ? "No files" : "No folder"))))
@@ -272,7 +293,7 @@ export default class Files extends View {
         this.fileError ? div().p(12).text_color(t.dim).child(this.fileError)
           : this.isImage && this.imagePath ? div().flex_1().min_h(0).p(10).flex().items_center().justify_center()
             .child(image(this.imagePath).max_w_full().max_h_full())
-            : this.isMarkdown && this.text !== null ? div().flex_1().min_h(0).px(14).py(10).text_size(13)
+            : this.isMarkdown && !this.markdownSource && this.text !== null ? div().flex_1().min_h(0).px(14).py(10).text_size(13)
               .child(TextView.markdown(`files-md-${this.file}`, prose(this.text)).scrollable(true).selectable(true).size_full())
               : this.code ? Editor.new(this.code).flex_1().min_h(0)
                 : div().p(12).text_color(t.dim).child("Loading file…")));

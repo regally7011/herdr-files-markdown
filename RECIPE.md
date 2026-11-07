@@ -19,6 +19,11 @@ vertical scrollbar. Clicking an image replaces the tree with the image fitted
 inside a 10 px padded area, centered, never larger than the panel. Every other
 file keeps the shipped read-only source preview.
 
+When a Markdown file is open, a small bordered **Source** button sits in the
+header between *Files* and the file name. Clicking it shows the raw text in the
+shipped read-only code view, with line numbers; the button becomes **Preview**
+and returns to the rendered view.
+
 The back arrow returns to the tree with every expanded folder preserved. The
 header shows the open file's name in 12 px `dim` while a preview is showing.
 
@@ -27,6 +32,9 @@ header shows the open file's name in 12 px `dim` while a preview is showing.
 - Markdown means `.md`, `.mdx` or `.markdown`, case-insensitive. A leading YAML
   frontmatter block is hidden from the rendered view; the file on disk is never
   changed.
+- The **Source** button appears only for Markdown. Source shows the file exactly
+  as stored, including frontmatter; **Preview** returns to the rendered view.
+  Opening a different file starts rendered again.
 - Images means `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.ico`,
   `.avif` or `.svg`, case-insensitive.
 - Clicking a file opens it; clicking a folder expands or collapses it. Rows
@@ -79,7 +87,18 @@ shipped folder. The implementation here is that clone plus the changes below.
   `text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "")`, store the text, and
   render `TextView.markdown(\`files-md-${file}\`, prose).scrollable(true)
   .selectable(true).size_full()` in the preview branch. Do not build an
-  `EditorState` for Markdown.
+  `EditorState` for Markdown unless source mode is on.
+- Source toggle: `this.markdownSource` starts false and resets when a different
+  file is shown. `toggleSource()` flips it; entering source mode builds
+  `this.editor(this.text, "md")`, the same read-only `EditorState` used for code
+  (line numbers, folding). Leaving source mode releases the editor. Gate the
+  Markdown render branch on `!this.markdownSource` so the editor branch shows
+  instead. The header draws a small bordered `Source`/`Preview` button only when
+  `isMarkdown && text !== null`.
+- Shared editor helper: `editor(value, language)` builds the read-only
+  `EditorState` with the configured code font, 12 px type and the theme's
+  syntax colors; both the source toggle and the shipped non-Markdown preview
+  use it.
 - Rendering images: branch to `showImage()` before any text read. Copy the
   bytes into `appHome()/files-preview/` and set `imagePath` to the relative
   `files-preview/<hash>-<time><ext>` path; render
@@ -157,6 +176,8 @@ already does), then delete the mod folder; no other file was changed.
 - The right-click menu belongs to Markdown Browser. Publishing this mod does
   not include that mod; the menu is simply absent (with a notification) until
   the person installs it.
+- The source view is read-only: it never writes the file. It uses the same
+  400,000-character truncation as the other text previews.
 - The top bar's *Files* button and its stack are part of the layout, not this
   mod. Without the layout edit in **Install**, the mod loads but is never
   shown.
@@ -167,6 +188,9 @@ already does), then delete the mod folder; no other file was changed.
 - In a layout whose Files block points at `files-markdown`, clicking a `.md`,
   `.mdx` or `.markdown` file shows formatted text with headings, lists, code
   and tables, and no frontmatter.
+- The header's **Source** button shows the raw Markdown (frontmatter included)
+  in the read-only code view; **Preview** returns to the rendered view, and
+  opening another file starts rendered.
 - An image click shows the image fitted inside the panel; Back returns to the
   tree with the same folders expanded.
 - A local image above 24 MB shows *Image too large to preview* instead of

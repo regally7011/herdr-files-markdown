@@ -5,6 +5,8 @@ A mod for Herdr App 0.1.13 and later: Herdr's Files panel with Markdown
 rendered and images previewed in place, on this computer or a remote space.
 
 - Click a `.md`, `.mdx` or `.markdown` file to read it formatted.
+- Use the **Source** button in the Files header to see the raw Markdown;
+  **Preview** returns to the rendered view.
 - Click an image to see it fitted to the panel.
 - Right-click a Markdown file to open it in Markdown Browser's pane, when that
   mod is installed.
