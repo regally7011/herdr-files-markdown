@@ -1,0 +1,13 @@
+Files with Markdown is derived from the `files` mod shipped with Herdr App
+0.1.13, part of the Herdr App project at https://github.com/herdrdev/herdr-app,
+licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Changes from the shipped Files mod: Markdown files render through
+`TextView.markdown` (with a leading YAML frontmatter block hidden), images
+render through `image()` after being copied into the app home (local reads, and
+remote reads over `exec` as base64 with a PowerShell fallback), an open local
+Markdown file or image reloads when it changes, and a right-click menu on
+Markdown rows opens the optional Markdown Browser mod.
+
+Herdr and Herdr App are projects of their respective authors. This repository
+is an independent mod and is not published by the Herdr project.
