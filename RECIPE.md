@@ -119,11 +119,12 @@ shipped folder. The implementation here is that clone plus the changes below.
 - Right-click: on a Markdown row, `cx.stop_propagation()` and
   `openOverlay({ mod: "markdown-browser", kind: "popup", width: 220,
   height: 12 + 32 * 2, props: { file: \`${root}/${path}\`, on } })`. Detect the
-  companion first with
-  `fs.access(\`${appHome()}/mods/markdown-browser/mod.json\`)`; when it is
-  missing, call `notify({ title: "Markdown Browser is not installed", body:
+  companion first by reading
+  `readTextFile(\`${appHome()}/mods/markdown-browser/mod.json\`)`; when it
+  returns null, call `notify({ title: "Markdown Browser is not installed", body:
   "Add herdr.dev/mods/ohneda/herdr-markdown-browser for this menu.", level:
-  "info" })`.
+  "info" })`. (`fs.access` is not a reliable test inside the mod sandbox;
+  `readTextFile` is.)
 - Preview branch order: error text, then a ready image, then ready Markdown
   text, then the shipped `Editor` for other files, then *Loading file…*.
   Render 13 px Markdown in `px(14).py(10)`; render images in

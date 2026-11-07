@@ -69,7 +69,7 @@ export default class Files extends View {
     // The Markdown Browser mod draws the right-click menu; without it, say so instead.
     this.hasMarkdownBrowser = false;
     cx.spawn(async cx => {
-      this.hasMarkdownBrowser = await fs.access(`${appHome()}/mods/markdown-browser/mod.json`).then(() => true, () => false);
+      this.hasMarkdownBrowser = (await readTextFile(`${appHome()}/mods/markdown-browser/mod.json`).catch(() => null)) !== null;
       cx.notify();
     });
     cx.timer.every(10000, cx => this.refresh(cx));
